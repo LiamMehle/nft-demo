@@ -1,8 +1,45 @@
+'use client'
+
 import Image from "next/image";
 import styles from "./page.module.css";
+import http from "http";
+import React, {useState} from "react";
+import { error } from "console";
+import { json } from "stream/consumers";
 
 export default function home(props: any): any {
-    return (
+  const [targetWallet,        setTargetWallet]        = useState<string>('');  // type not strictly needed, but consistency
+  const [targetWalletHistory, setTargetWalletHistory] = useState<string[]>([]);
+  const [errorHistory,        setErrorHistory]        = useState<string[]>([]);
+  const doTransfer = async (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    // if (!validAddress(targetWallet))
+    //   return;
+    const requestObject: GiveTokenRequest = {
+      targetWallet: targetWallet,
+      amount: {
+        mantissa: 1,
+        exponent: -4
+      }
+    };
+
+    const response = await fetch("/api/giveToken", {
+      method: "POST",
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestObject)});
+    const data = await response.text();
+    const responseObject: GiveTokenResponse = JSON.parse(data);
+
+    if (responseObject.status == "failure") {
+      setErrorHistory([...errorHistory, responseObject.reason ?? "unknown"]);
+    }
+    // must be success, then
+    setTargetWalletHistory([...targetWalletHistory, responseObject.targetWallet]);
+  };
+
+  return (
     <div className={styles.page}>
       <main className={styles.main}>
         <Image
@@ -23,12 +60,21 @@ export default function home(props: any): any {
           <li>Saved and saw the changes <i>near</i> instantly.</li>
         </ol>
 
+        <input
+          id="targetAddress"
+          onChange={ event => setTargetWallet(event.target.value) }
+          type="text"
+          pattern="0x[a-fA-F0-9]{40}"
+          title="Recipient address: "
+          placeholder="0x1234...def"
+          ></input>
         <div className={styles.ctas}>
-          <a
+          <button
             className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            onClick={ doTransfer }
+            // href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
+            // target="_blank"
+            // rel="noopener noreferrer"
           >
             <Image
               className={styles.logo}
@@ -37,8 +83,8 @@ export default function home(props: any): any {
               width={20}
               height={20}
             />
-            Deploy now
-          </a>
+            Get free ETH
+          </button>
           <a
             href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
             target="_blank"
@@ -47,6 +93,16 @@ export default function home(props: any): any {
           >
             Read our docs
           </a>
+        </div>
+        <div>
+          <div>transfers:</div>
+          <ol>
+            {targetWalletHistory.map(wallet => <li key={wallet}> {wallet} </li> )}
+          </ol>
+          <div>errors:</div>
+          <ol>
+            {errorHistory.map(error => <li key={error}> {error} </li> )}
+          </ol>
         </div>
       </main>
       <footer className={styles.footer}>
