@@ -27,6 +27,16 @@
   }
 }
 
+.gapless {
+  gap: 8px;
+  display: flex;
+  flex-direction: column;
+}
+.horizontal {
+  display: flex;
+  flex-direction: row;
+}
+
 .main {
   display: flex;
   flex-direction: column;

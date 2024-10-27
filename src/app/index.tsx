@@ -108,54 +108,58 @@ export default function home(props: any): any {
     <div className={styles.page}>
       <main className={styles.main}>
         <TextContent />
-        {/* <div className={styles.gapless}> */}
-          <select>
-            {/* {availableSigners.map( (x, index) => <option value={index}>{x}</option>)} */}
-          </select>
-          <button
+        <div className={styles.horizontal}>
+          <div className={styles.gapless}>
+            from:
+            <AddressInput id="from (address)" onChange={ event => setSourceWallet(event.target.value) } />
+            to:
+            <AddressInput id="to (address)" onChange={ event => setTargetWallet(event.target.value) } />
+            <div className={styles.ctas}>
+              <button
+                className={styles.primary}
+                onClick={ doTransfer }>
+                <Image
+                  className={styles.logo}
+                  src="/vercel.svg"
+                  alt="Vercel logomark"
+                  width={20}
+                  height={20}
+                />
+                Give token
+              </button>
+              <button
+                className={styles.secondary}
+                onClick={checkOwnership}>
+                check who owns the token
+              </button>
+              <button
+                className={styles.secondary}
+                onClick={mintToken}>
+                create new token
+              </button>
+            </div>
+          </div>
+          <div
+          className={styles.ctas}>
+            <select style={{height:"1.5em"}}>
+              {/* {availableSigners.map( (x, index) => <option value={index}>{x}</option>)} */}
+            </select>
+            <button
             className={styles.primary}
             onClick={connectMetamask}>
             connect to metamask
-          </button>
-          from:
-          <AddressInput id="from (address)" onChange={ event => setSourceWallet(event.target.value) } />
-          to:
-          <AddressInput id="to (address)" onChange={ event => setTargetWallet(event.target.value) } />
-          <div className={styles.ctas}>
-            <button
-              className={styles.primary}
-              onClick={ doTransfer }>
-              <Image
-                className={styles.logo}
-                src="/vercel.svg"
-                alt="Vercel logomark"
-                width={20}
-                height={20}
-              />
-              Give token
-            </button>
-            <button
-              className={styles.secondary}
-              onClick={checkOwnership}>
-              check who owns the token
-            </button>
-            <button
-              className={styles.secondary}
-              onClick={mintToken}>
-              create new token
-            </button>
-          </div>
-          <div>
-            transfers:
-            <ol>
-              {targetWalletHistory.map(wallet => <li key={wallet}> {wallet} </li> )}
-            </ol>
-            errors:
-            <ol>
-              {errorHistory.map(error => <li key={error}> {error} </li> )}
-            </ol>
-          </div>
-        {/* </div> */}
+          </button></div>
+        </div>
+        <div>
+          transfers:
+          <ol>
+            {targetWalletHistory.map(wallet => <li key={wallet}> {wallet} </li> )}
+          </ol>
+          errors:
+          <ol>
+            {errorHistory.map(error => <li key={error}> {error} </li> )}
+          </ol>
+        </div>
       </main>
       <Footer />
     </div>
