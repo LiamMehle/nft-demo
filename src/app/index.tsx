@@ -42,14 +42,17 @@ export default function home(props: any): any {
   return (
     <div className={styles.page}>
       <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
+        <span style={{display: "inline-block", flexDirection: "row", alignItems:"flex-end"}}>
+          <Image
+            className={styles.logo}
+            src="/next.svg"
+              alt="Next.js logo"
+            width={180}
+            height={38}
+            priority
+            style={{verticalAlign:"baseline"}}
+          /><span style={{marginLeft:"1em", position:"relative",}}>app I created.</span>
+        </span>
         <ol>
           <li>
             <i>Already got started</i> by editing <code>src/app/page.tsx</code>.
