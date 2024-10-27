@@ -2,41 +2,49 @@
 
 import Image from "next/image";
 import styles from "./page.module.css";
-import http from "http";
-import React, {useState} from "react";
-import { error } from "console";
-import { json } from "stream/consumers";
+import React, {useState, useMemo} from "react";
+import { ethers } from "ethers";
+import { MetaMaskInpageProvider } from "@metamask/providers";
+
+declare global {
+  interface Window{
+    ethereum?:MetaMaskInpageProvider
+  }
+}
 
 export default function home(props: any): any {
-  const [targetWallet,        setTargetWallet]        = useState<string>('');  // type not strictly needed, but consistency
+  const [sourceWallet,        setSourceWallet]        = useState<string>('');  // type not strictly needed, but consistency
+  const [targetWallet,        setTargetWallet]        = useState<string>('');
   const [targetWalletHistory, setTargetWalletHistory] = useState<string[]>([]);
   const [errorHistory,        setErrorHistory]        = useState<string[]>([]);
+  const [provider, shyContract] = useMemo(() => {
+    const nftAbi = [
+      // Some details about the token
+      "function name() view returns (string)",
+      "function symbol() view returns (string)",
+      "function getOwner(uint token) public view returns (address)",
+      "function mint() public returns (uint)",
+      "function destroy(uint token) public",
+      "function give(uint token, address to) public",
+      // Function to destroy the contract and send funds to the specified address
+      "function destroyContract() public",
+      "address public minter"
+    ];
+    
+    if (window.ethereum === undefined)
+      return [];
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const address = "0xa4ea8f621006bf4ff6f87e4bf591026267fad2f5";
+    const shyContract = new ethers.Contract(address, nftAbi, provider);
+    return [provider, shyContract];
+  }, [window.ethereum]);
+
   const doTransfer = async (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
-    // if (!validAddress(targetWallet))
-    //   return;
-    const requestObject: GiveTokenRequest = {
-      targetWallet: targetWallet,
-      amount: {
-        mantissa: 1,
-        exponent: -4
-      }
-    };
-
-    const response = await fetch("/api/giveToken", {
-      method: "POST",
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestObject)});
-    const data = await response.text();
-    const responseObject: GiveTokenResponse = JSON.parse(data);
-
-    if (responseObject.status == "failure") {
-      setErrorHistory([...errorHistory, responseObject.reason ?? "unknown"]);
-    }
-    // must be success, then
-    setTargetWalletHistory([...targetWalletHistory, responseObject.targetWallet]);
+    if (provider === undefined || shyContract === undefined)
+      return;  // todo: figure out error handling
+    // todo: call contract with signer(?) and correct parameters to give nft
+    alert(await shyContract.symbol());
   };
 
   return (
@@ -62,15 +70,22 @@ export default function home(props: any): any {
           </li>
           <li>Saved and saw the changes <i>near</i> instantly.</li>
         </ol>
-
         <input
-          id="targetAddress"
+          id="from (address)"
+          onChange={ event => setSourceWallet(event.target.value) }
+          type="text"
+          pattern="0x[a-fA-F0-9]{40}"
+          title="Recipient address: "
+          placeholder="0x1234...def"
+          />
+        <input
+          id="to (address)"
           onChange={ event => setTargetWallet(event.target.value) }
           type="text"
           pattern="0x[a-fA-F0-9]{40}"
           title="Recipient address: "
           placeholder="0x1234...def"
-          ></input>
+          />
         <div className={styles.ctas}>
           <button
             className={styles.primary}
@@ -86,7 +101,7 @@ export default function home(props: any): any {
               width={20}
               height={20}
             />
-            Get free ETH
+            Get free token
           </button>
           <a
             href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
