@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import styles from "./page.module.css";
-import React, {useState} from "react";
+import React, { useState, useRef } from "react";
 import { ethers } from "ethers";
 import { MetaMaskInpageProvider } from "@metamask/providers";
 import { TransactionResponse } from "ethers";
@@ -655,6 +655,7 @@ export default function home(props: any): any {
   const [tokenId,      setTokenId     ] = useState<number|undefined>(undefined);
   const [eventHistory, setEventHistory] = useState<string[]>([]);
   const [cryptoState,  setCryptoState ] = useState<CryptoState|undefined>(undefined);
+  const processedTxs = useRef(new Set<string>());
 
   const connectMetamask = (event: React.MouseEvent<HTMLButtonElement>) => {
     if (window.ethereum === undefined)
@@ -667,14 +668,26 @@ export default function home(props: any): any {
         console.log(`sigher=${JSON.stringify(signer)}`)
         const shyContract = new ethers.Contract(contractAddress, nftAbi, signer);
 
-        shyContract.on("event TokenMinted(uint id)", (id) => {
-          setEventHistory(eventHistory => [...eventHistory, `Token minted with ID ${id}`]);
+        shyContract.on("event TokenMinted(uint id)", (id, event) => {
+          if (processedTxs.current.has(event.transactionHash))
+            return;
+          processedTxs.current.add(event.transactionHash);
+          setEventHistory(eventHistory =>
+            [...eventHistory, `Token minted with ID ${id}`]);
         });
-        shyContract.on("event TokenGiven(address from, address to, uint id)", (from, to, id) => {
-          setEventHistory(eventHistory => [...eventHistory, `Token ${id} given by ${from} to ${to}`]);
+        shyContract.on("event TokenGiven(address from, address to, uint id)", (from, to, id, event) => {
+          if (processedTxs.current.has(event.transactionHash))
+            return;
+          processedTxs.current.add(event.transactionHash);
+          setEventHistory(eventHistory =>
+            [...eventHistory, `Token ${id} given by ${from} to ${to}`])
         });
-        shyContract.on("event TokenDestroyed(uint id)", (id) => {
-          setEventHistory(eventHistory => [...eventHistory, `Token ${id} destroyed`]);//`Token with ID ${id} destroyed`]);
+        shyContract.on("event TokenDestroyed(uint id)", (id, event) => {
+          if (processedTxs.current.has(event.transactionHash))
+            return;
+          processedTxs.current.add(event.transactionHash);
+          setEventHistory(eventHistory =>
+            [...eventHistory, `Token ${id} destroyed`])
         });
 
         setCryptoState({
