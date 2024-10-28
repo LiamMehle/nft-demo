@@ -31,38 +31,46 @@ type CryptoState = {
   shyContract: ethers.Contract
 };
 
+type FatSigner = {
+  signer:  ethers.JsonRpcSigner,
+  address: string
+};
+
 export default function home(props: any): any {
   const [sourceWallet,        setSourceWallet]        = useState<string>('');  // type not strictly needed, but consistency
   const [targetWallet,        setTargetWallet]        = useState<string>('');
   const [targetWalletHistory, setTargetWalletHistory] = useState<string[]>([]);
   const [errorHistory,        setErrorHistory]        = useState<string[]>([]);
   const [cryptoState,         setCryptoState]         = useState<CryptoState|undefined>(undefined);
-  const [signer,              setSigner]              = useState<CryptoState|undefined>(undefined);
-  let availableSigners: ethers.JsonRpcSigner[] =  useMemo( async () => {
-    if (window.ethereum === undefined)
-      return undefined;
-    const provider = new ethers.BrowserProvider(window.ethereum);
-    return await provider.listAccounts();
+  const [signerIndex,         setSignerIndex]         = useState(0);
+  // state is to remember when they are listed
+  const [availableSigners,    setAvailableSigners]    = useState<FatSigner[] | undefined>(undefined);
+  // memo to only recompute when window.etherium changes. It's either undefined (-> undefined) or a valid value (-> signers[])
+  useMemo(() => {
+    if (window.ethereum === undefined)              // metamask hasn't loaded yet
+      return console.error('etherum not defined');  // nothing to do
+    console.info('dispatched ethers load')
+
+    const provider = new ethers.BrowserProvider(window.ethereum);                     // provider (view into 'web3')
+    provider.listAccounts()                                                           // get accounts, but it's a promise.
+      .then(signers =>                                                                // when Signer[] promise resolves, convert to Address[].
+        Promise.all(signers.map( s=>                                                  // ..it's another promise.
+          s.getAddress().then(a=>{ return {address: a, signer: s}} ))))               // (store signer along with address to avoid resolvng the promise again later)
+      .then(signers => { console.log(`acquired signers: ${JSON.stringify( )}`)  // when SignerAddress[] promise resolves,
+        setAvailableSigners(signers)});                                               // store their addresses
   }, [window.ethereum]);
-  // const [provider, shyContract] = useMemo(() => {
-    
-  //   if (window.ethereum === undefined)
-  //     return [];
-  //   const provider = new ethers.BrowserProvider(window.ethereum);
-  //   const address = "0xa4ea8f621006bf4ff6f87e4bf591026267fad2f5";
-  //   const shyContract = new ethers.Contract(address, nftAbi, provider);
-  //   return [provider, shyContract];
-  // }, [window.ethereum]);
-  
+
   const connectMetamask = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     if (window.ethereum === undefined)
       return alert("Unable to access metamask plugin. Please make use you have it installed and enabled.");
+    if (availableSigners === undefined)
+      return alert("Signer not found in metamask plugin, what did you do?");
     const provider = new ethers.BrowserProvider(window.ethereum);
     const address = "0xa4ea8f621006bf4ff6f87e4bf591026267fad2f5";
     const shyContract = new ethers.Contract(address, nftAbi, provider);
     
-    // shyContract.connect(signer);
+    shyContract.connect(availableSigners[signerIndex].signer);
 
     setCryptoState({
       provider: provider,
@@ -141,8 +149,8 @@ export default function home(props: any): any {
           </div>
           <div
           className={styles.ctas}>
-            <select style={{height:"1.5em"}}>
-              {/* {availableSigners.map( (x, index) => <option value={index}>{x}</option>)} */}
+            <select style={{height:"1.5em"}} onChange={(s)=>setSignerIndex(parseInt(s.target.value))}>
+              {(availableSigners ?? []).map( (x, index) => <option value={index}>{x.address}</option>)}
             </select>
             <button
             className={styles.primary}
