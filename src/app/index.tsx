@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import styles from "./page.module.css";
-import React, {useState, useMemo, unstable_SuspenseList} from "react";
+import React, {useState} from "react";
 import { ethers } from "ethers";
 import { MetaMaskInpageProvider } from "@metamask/providers";
 import { TransactionResponse } from "ethers";
@@ -667,14 +667,14 @@ export default function home(props: any): any {
         console.log(`sigher=${JSON.stringify(signer)}`)
         const shyContract = new ethers.Contract(contractAddress, nftAbi, signer);
 
-        shyContract.on("event TokenMinted(uint id)", (args) => {
-          setEventHistory([...eventHistory, `Token minted with ID ${JSON.stringify(args)}`]);
+        shyContract.on("event TokenMinted(uint id)", (id) => {
+          setEventHistory(eventHistory => [...eventHistory, `Token minted with ID ${id}`]);
         });
         shyContract.on("event TokenGiven(address from, address to, uint id)", (from, to, id) => {
-          setEventHistory([...eventHistory, `Token ${id} given: ${from} => ${to}`]);
+          setEventHistory(eventHistory => [...eventHistory, `Token ${id} given by ${from} to ${to}`]);
         });
-        shyContract.on("event TokenDestroyed(uint id)", (args) => {
-          setEventHistory([...eventHistory, JSON.stringify(args)]);//`Token with ID ${id} destroyed`]);
+        shyContract.on("event TokenDestroyed(uint id)", (id) => {
+          setEventHistory(eventHistory => [...eventHistory, `Token ${id} destroyed`]);//`Token with ID ${id} destroyed`]);
         });
 
         setCryptoState({
