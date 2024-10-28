@@ -652,6 +652,7 @@ function handler<T extends {preventDefault: ()=>void}>(f: (_:T)=>void): (_:T)=>v
 export default function home(props: any): any {
   const [sourceWallet, setSourceWallet] = useState<string>('');  // type not strictly needed, but consistency
   const [targetWallet, setTargetWallet] = useState<string>('');
+  const [tokenId,      setTokenId     ] = useState<number|undefined>(undefined);
   const [eventHistory, setEventHistory] = useState<string[]>([]);
   const [cryptoState,  setCryptoState ] = useState<CryptoState|undefined>(undefined);
 
@@ -670,7 +671,7 @@ export default function home(props: any): any {
           setEventHistory([...eventHistory, `Token minted with ID ${JSON.stringify(args)}`]);
         });
         shyContract.on("TokenGiven", (args) => {
-          setEventHistory([...eventHistory, JSON.stringify(args)]);//`Token with ID ${id} given by ${from} to ${to}`]);
+          setEventHistory([...eventHistory, `Token given: ${args}`]);
         });
         shyContract.on("event TokenDestroyed(uint id)", (args) => {
           setEventHistory([...eventHistory, JSON.stringify(args)]);//`Token with ID ${id} destroyed`]);
@@ -690,21 +691,22 @@ export default function home(props: any): any {
     const {shyContract} = cryptoState
     
     // todo: call contract with signer(?) and correct parameters to give nft
-    shyContract.minter().then(x => alert(JSON.stringify(x)));
+    shyContract.give(tokenId, targetWallet).then((res: TransactionResponse) => {
+      setEventHistory([...eventHistory, `sent token give request. hash: ${res.hash}`]);
+    });
   };
   const mintToken = (event: React.MouseEvent<HTMLButtonElement>) => {
     if (cryptoState === undefined) return;  // todo: figure out error handling
     
     const {provider, address, shyContract} = cryptoState
     shyContract.mint().then((res: TransactionResponse) => {
-      setEventHistory([...eventHistory, `sent token request. hash: ${res.hash}`]);
+      setEventHistory([...eventHistory, `sent token mint request. hash: ${res.hash}`]);
     });
   }
   const checkOwnership = (event: React.MouseEvent<HTMLButtonElement>) => {
-    if (cryptoState === undefined) return;  // todo: figure out error handling
+    if (cryptoState === undefined || tokenId === undefined) return;  // todo: figure out error handling
     
     const {shyContract} = cryptoState
-    const tokenId = sourceWallet ?? targetWallet;
     shyContract.getOwner(tokenId).then(owner =>
       alert(`Token with ID ${tokenId} is owned by ${owner}`));
   }
@@ -715,6 +717,8 @@ export default function home(props: any): any {
         <TextContent />
         <div className={styles.horizontal}>
           <div className={styles.gapless}>
+            token ID:
+            <AddressInput id="token ID)" onChange={ (event) => setTokenId(parseInt(event.target.value)) } />
             from:
             <AddressInput id="from (address)" onChange={ (event) => setSourceWallet(event.target.value) } />
             to:
