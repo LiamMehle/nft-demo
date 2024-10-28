@@ -670,8 +670,8 @@ export default function home(props: any): any {
         shyContract.on("event TokenMinted(uint id)", (args) => {
           setEventHistory([...eventHistory, `Token minted with ID ${JSON.stringify(args)}`]);
         });
-        shyContract.on("TokenGiven", (args) => {
-          setEventHistory([...eventHistory, `Token given: ${args}`]);
+        shyContract.on("event TokenGiven(address from, address to, uint id)", (from, to, id) => {
+          setEventHistory([...eventHistory, `Token ${id} given: ${from} => ${to}`]);
         });
         shyContract.on("event TokenDestroyed(uint id)", (args) => {
           setEventHistory([...eventHistory, JSON.stringify(args)]);//`Token with ID ${id} destroyed`]);
