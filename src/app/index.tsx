@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import styles from "./page.module.css";
-import React, {useState, useMemo} from "react";
+import React, {useState, useMemo, unstable_SuspenseList} from "react";
 import { ethers } from "ethers";
 import { MetaMaskInpageProvider } from "@metamask/providers";
 import { TransactionResponse } from "ethers";
@@ -37,43 +37,38 @@ type FatSigner = {
   address: string
 };
 
-export default function home(props: any): any {
-  const [sourceWallet,        setSourceWallet]        = useState<string>('');  // type not strictly needed, but consistency
-  const [targetWallet,        setTargetWallet]        = useState<string>('');
-  const [targetWalletHistory, setTargetWalletHistory] = useState<string[]>([]);
-  const [errorHistory,        setErrorHistory]        = useState<string[]>([]);
-  const [cryptoState,         setCryptoState]         = useState<CryptoState|undefined>(undefined);
-  // const [signerIndex,         setSignerIndex]         = useState(0);
-  // state is to remember when they are listed
-  // const [availableSigners,    setAvailableSigners]    = useState<FatSigner[] | undefined>(undefined);
-  // memo to only recompute when window.etherium changes. It's either undefined (-> undefined) or a valid value (-> signers[])
-  // useMemo(() => {
-  //   if (window.ethereum === undefined)              // metamask hasn't loaded yet
-  //     return console.error('etherum not defined');  // nothing to do
-  //   console.info('dispatched ethers load')
+// higher order fuckery. Buttons reload the site, so gotta preventDefault it away every time.
+function handler<T extends {preventDefault: ()=>void}>(f: (_:T)=>void): (_:T)=>void {
+  return e => { e.preventDefault(); f(e); }
+}
 
-  //   const provider = new ethers.BrowserProvider(window.ethereum);                     // provider (view into 'web3')
-  //                                                              // get accounts, but it's a promise.
-  //     .then(signers =>                                                                // when Signer[] promise resolves, convert to Address[].
-  //       Promise.all(signers.map( s=>                                                  // ..it's another promise.
-  //         s.getAddress().then(a=>{ return {address: a, signer: s}} ))))               // (store signer along with address to avoid resolvng the promise again later)
-  //     .then(signers => { console.log(`acquired signers: ${JSON.stringify( )}`)  // when SignerAddress[] promise resolves,
-  //       setAvailableSigners(signers)});                                               // store their addresses
-  // }, [window.ethereum]);
+export default function home(props: any): any {
+  const [sourceWallet, setSourceWallet] = useState<string>('');  // type not strictly needed, but consistency
+  const [targetWallet, setTargetWallet] = useState<string>('');
+  const [eventHistory, setEventHistory] = useState<string[]>([]);
+  const [cryptoState,  setCryptoState ] = useState<CryptoState|undefined>(undefined);
 
   const connectMetamask = (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
     if (window.ethereum === undefined)
       return alert("Unable to access metamask plugin. Please make use you have it installed and enabled.");
     const provider = new ethers.BrowserProvider(window.ethereum);
     const contractAddress = "0xa4ea8f621006bf4ff6f87e4bf591026267fad2f5";
     // const shyContract = new ethers.Contract(contractAddress, nftAbi, provider);
-
     provider.getSigner(sourceWallet)
       .then(signer => {
         console.log(`sigher=${JSON.stringify(signer)}`)
         const shyContract = new ethers.Contract(contractAddress, nftAbi, signer);
-    
+
+        shyContract.on("TokenMinted", ({id}) => {
+          setEventHistory([...eventHistory, `Token minted with ID ${id}`]);
+        }),
+        shyContract.on("TokenGiven", ({from, to, id}) => {
+          setEventHistory([...eventHistory, `Token with ID ${id} given by ${from} to ${to}`]);
+        }),
+        shyContract.on("TokenDestroyed", ({id}) => {
+          setEventHistory([...eventHistory, `Token with ID ${id} destroyed`]);
+        })
+
         setCryptoState({
           provider: provider,
           address: contractAddress,
@@ -83,9 +78,7 @@ export default function home(props: any): any {
   }
 
   const doTransfer = (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
-    if (cryptoState === undefined)
-      return;  // todo: figure out error handling
+    if (cryptoState === undefined) return;  // todo: figure out error handling
     
     const {provider, address, shyContract} = cryptoState
     
@@ -93,17 +86,15 @@ export default function home(props: any): any {
     shyContract.minter().then(x => alert(JSON.stringify(x)));
   };
   const mintToken = async (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
-    if (cryptoState === undefined)
-      return;  // todo: figure out error handling
+    if (cryptoState === undefined) return;  // todo: figure out error handling
     
     const {provider, address, shyContract} = cryptoState
-    shyContract.mint().then((tokenId: TransactionResponse) => alert(`you are now the proud owner of token #${JSON.stringify(tokenId)}`));
+    shyContract.mint().then((res: TransactionResponse) => {
+      setEventHistory([...eventHistory, `sent token request. hash: ${res.hash}`]);
+    });
   }
   const checkOwnership = async (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
-    if (cryptoState === undefined)
-      return;  // todo: figure out error handling
+    if (cryptoState === undefined) return;  // todo: figure out error handling
     
     const {provider, address, shyContract} = cryptoState
     const tokenId = sourceWallet ?? targetWallet;
@@ -125,7 +116,7 @@ export default function home(props: any): any {
             <div className={styles.ctas}>
               <button
                 className={styles.primary}
-                onClick={ doTransfer }>
+                onClick={ handler(doTransfer) }>
                 <Image
                   className={styles.logo}
                   src="/vercel.svg"
@@ -137,12 +128,12 @@ export default function home(props: any): any {
               </button>
               <button
                 className={styles.secondary}
-                onClick={checkOwnership}>
+                onClick={ handler(checkOwnership)}>
                 check who owns the token
               </button>
               <button
                 className={styles.secondary}
-                onClick={mintToken}>
+                onClick={ handler(mintToken)}>
                 create new token
               </button>
             </div>
@@ -154,19 +145,15 @@ export default function home(props: any): any {
             </select> */}
             <button
             className={styles.primary}
-            onClick={connectMetamask}>
+            onClick={ handler(connectMetamask)}>
             connect to metamask
           </button></div>
         </div>
         <div>
-          transfers:
-          <ol>
-            {targetWalletHistory.map(wallet => <li key={wallet}> {wallet} </li> )}
-          </ol>
-          errors:
-          <ol>
-            {errorHistory.map(error => <li key={error}> {error} </li> )}
-          </ol>
+          events:
+          <ul>
+            {eventHistory.map((event, index) => <li key={index}> {event} </li> )}
+          </ul>
         </div>
       </main>
       <Footer />
