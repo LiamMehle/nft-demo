@@ -21,4 +21,5 @@
 - expected to finish, instead everything breaks (ipfs no longer handled automatically by remix)
 - got an API key from infura, but even their own demos don't work (screenshot)
 - turns out event listeners silently error if defined incorrectly
-
+- instead of using destructuring, event listeners silentry don't pass arguments past the number that the listener takes.
+- useref doesn't re-render

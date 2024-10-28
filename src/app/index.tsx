@@ -650,11 +650,11 @@ function handler<T extends {preventDefault: ()=>void}>(f: (_:T)=>void): (_:T)=>v
 }
 
 export default function home(props: any): any {
-  const [sourceWallet, setSourceWallet] = useState<string>('');  // type not strictly needed, but consistency
-  const [targetWallet, setTargetWallet] = useState<string>('');
-  const [tokenId,      setTokenId     ] = useState<number|undefined>(undefined);
+  const sourceWallet = useRef<string>('');  // type not strictly needed, but consistency
+  const targetWallet = useRef<string>('');
+  const tokenId      = useRef<number|undefined>(undefined);
   const [eventHistory, setEventHistory] = useState<string[]>([]);
-  const [cryptoState,  setCryptoState ] = useState<CryptoState|undefined>(undefined);
+  const cryptoState  = useRef<CryptoState|undefined>(undefined);
   const processedTxs = useRef(new Set<string>());
 
   const connectMetamask = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -663,7 +663,7 @@ export default function home(props: any): any {
     const provider = new ethers.BrowserProvider(window.ethereum);
     const contractAddress = "0x6b10BC40A6Bae5684E497bAe5611518DD657266F";
     // const shyContract = new ethers.Contract(contractAddress, nftAbi, provider);
-    provider.getSigner(sourceWallet)
+    provider.getSigner(sourceWallet.current)
       .then(signer => {
         console.log(`sigher=${JSON.stringify(signer)}`)
         const shyContract = new ethers.Contract(contractAddress, nftAbi, signer);
@@ -690,38 +690,38 @@ export default function home(props: any): any {
             [...eventHistory, `Token ${id} destroyed`])
         });
 
-        setCryptoState({
+        cryptoState.current = {
           provider: provider,
           address: contractAddress,
           shyContract: shyContract
-        });
+        };
       }).catch(e => console.error(e));
   }
 
   const doTransfer = (event: React.MouseEvent<HTMLButtonElement>) => {
-    if (cryptoState === undefined) return;  // todo: figure out error handling
+    if (cryptoState.current === undefined) return;  // todo: figure out error handling
     
-    const {shyContract} = cryptoState
+    const {shyContract} = cryptoState.current;
     
     // todo: call contract with signer(?) and correct parameters to give nft
-    shyContract.give(tokenId, targetWallet).then((res: TransactionResponse) => {
+    shyContract.give(tokenId.current, targetWallet.current).then((res: TransactionResponse) => {
       setEventHistory([...eventHistory, `sent token give request. hash: ${res.hash}`]);
     });
   };
   const mintToken = (event: React.MouseEvent<HTMLButtonElement>) => {
-    if (cryptoState === undefined) return;  // todo: figure out error handling
+    if (cryptoState.current === undefined) return;  // todo: figure out error handling
     
-    const {provider, address, shyContract} = cryptoState
+    const {provider, address, shyContract} = cryptoState.current;
     shyContract.mint().then((res: TransactionResponse) => {
       setEventHistory([...eventHistory, `sent token mint request. hash: ${res.hash}`]);
     });
   }
   const checkOwnership = (event: React.MouseEvent<HTMLButtonElement>) => {
-    if (cryptoState === undefined || tokenId === undefined) return;  // todo: figure out error handling
+    if (cryptoState.current === undefined || tokenId.current === undefined) return;  // todo: figure out error handling
     
-    const {shyContract} = cryptoState
-    shyContract.getOwner(tokenId).then(owner =>
-      alert(`Token with ID ${tokenId} is owned by ${owner}`));
+    const {shyContract} = cryptoState.current;
+    shyContract.getOwner(tokenId.current).then(owner =>
+      alert(`Token with ID ${tokenId.current} is owned by ${owner}`));
   }
 
   return (
@@ -731,11 +731,11 @@ export default function home(props: any): any {
         <div className={styles.horizontal}>
           <div className={styles.gapless}>
             token ID:
-            <AddressInput id="token ID)" onChange={ (event) => setTokenId(parseInt(event.target.value)) } />
+            <AddressInput id="token ID)" onChange={ (event) => tokenId.current = parseInt(event.target.value) } />
             from:
-            <AddressInput id="from (address)" onChange={ (event) => setSourceWallet(event.target.value) } />
+            <AddressInput id="from (address)" onChange={ (event) => sourceWallet.current = (event.target.value) } />
             to:
-            <AddressInput id="to (address)" onChange={ event => setTargetWallet(event.target.value) } />
+            <AddressInput id="to (address)" onChange={ event => targetWallet.current = (event.target.value) } />
             <div className={styles.ctas}>
               <button
                 className={styles.primary}
