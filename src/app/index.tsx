@@ -5,6 +5,7 @@ import styles from "./page.module.css";
 import React, {useState, useMemo} from "react";
 import { ethers } from "ethers";
 import { MetaMaskInpageProvider } from "@metamask/providers";
+import { TransactionResponse } from "ethers";
 
 declare global {
   interface Window{
@@ -42,44 +43,46 @@ export default function home(props: any): any {
   const [targetWalletHistory, setTargetWalletHistory] = useState<string[]>([]);
   const [errorHistory,        setErrorHistory]        = useState<string[]>([]);
   const [cryptoState,         setCryptoState]         = useState<CryptoState|undefined>(undefined);
-  const [signerIndex,         setSignerIndex]         = useState(0);
+  // const [signerIndex,         setSignerIndex]         = useState(0);
   // state is to remember when they are listed
-  const [availableSigners,    setAvailableSigners]    = useState<FatSigner[] | undefined>(undefined);
+  // const [availableSigners,    setAvailableSigners]    = useState<FatSigner[] | undefined>(undefined);
   // memo to only recompute when window.etherium changes. It's either undefined (-> undefined) or a valid value (-> signers[])
-  useMemo(() => {
-    if (window.ethereum === undefined)              // metamask hasn't loaded yet
-      return console.error('etherum not defined');  // nothing to do
-    console.info('dispatched ethers load')
+  // useMemo(() => {
+  //   if (window.ethereum === undefined)              // metamask hasn't loaded yet
+  //     return console.error('etherum not defined');  // nothing to do
+  //   console.info('dispatched ethers load')
 
-    const provider = new ethers.BrowserProvider(window.ethereum);                     // provider (view into 'web3')
-    provider.listAccounts()                                                           // get accounts, but it's a promise.
-      .then(signers =>                                                                // when Signer[] promise resolves, convert to Address[].
-        Promise.all(signers.map( s=>                                                  // ..it's another promise.
-          s.getAddress().then(a=>{ return {address: a, signer: s}} ))))               // (store signer along with address to avoid resolvng the promise again later)
-      .then(signers => { console.log(`acquired signers: ${JSON.stringify( )}`)  // when SignerAddress[] promise resolves,
-        setAvailableSigners(signers)});                                               // store their addresses
-  }, [window.ethereum]);
+  //   const provider = new ethers.BrowserProvider(window.ethereum);                     // provider (view into 'web3')
+  //                                                              // get accounts, but it's a promise.
+  //     .then(signers =>                                                                // when Signer[] promise resolves, convert to Address[].
+  //       Promise.all(signers.map( s=>                                                  // ..it's another promise.
+  //         s.getAddress().then(a=>{ return {address: a, signer: s}} ))))               // (store signer along with address to avoid resolvng the promise again later)
+  //     .then(signers => { console.log(`acquired signers: ${JSON.stringify( )}`)  // when SignerAddress[] promise resolves,
+  //       setAvailableSigners(signers)});                                               // store their addresses
+  // }, [window.ethereum]);
 
   const connectMetamask = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     if (window.ethereum === undefined)
       return alert("Unable to access metamask plugin. Please make use you have it installed and enabled.");
-    if (availableSigners === undefined)
-      return alert("Signer not found in metamask plugin, what did you do?");
     const provider = new ethers.BrowserProvider(window.ethereum);
-    const address = "0xa4ea8f621006bf4ff6f87e4bf591026267fad2f5";
-    const shyContract = new ethers.Contract(address, nftAbi, provider);
-    
-    shyContract.connect(availableSigners[signerIndex].signer);
+    const contractAddress = "0xa4ea8f621006bf4ff6f87e4bf591026267fad2f5";
+    // const shyContract = new ethers.Contract(contractAddress, nftAbi, provider);
 
-    setCryptoState({
-      provider: provider,
-      address: address,
-      shyContract: shyContract
-    });
+    provider.getSigner(sourceWallet)
+      .then(signer => {
+        console.log(`sigher=${JSON.stringify(signer)}`)
+        const shyContract = new ethers.Contract(contractAddress, nftAbi, signer);
+    
+        setCryptoState({
+          provider: provider,
+          address: contractAddress,
+          shyContract: shyContract
+        });
+      }).catch(e => console.error(e));
   }
 
-  const doTransfer = async (event: React.MouseEvent<HTMLButtonElement>) => {
+  const doTransfer = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     if (cryptoState === undefined)
       return;  // todo: figure out error handling
@@ -87,7 +90,7 @@ export default function home(props: any): any {
     const {provider, address, shyContract} = cryptoState
     
     // todo: call contract with signer(?) and correct parameters to give nft
-    alert(await shyContract.minter());
+    shyContract.minter().then(x => alert(JSON.stringify(x)));
   };
   const mintToken = async (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
@@ -95,10 +98,7 @@ export default function home(props: any): any {
       return;  // todo: figure out error handling
     
     const {provider, address, shyContract} = cryptoState
-    
-    const tokenId: Number = await shyContract.mint();
-    
-    alert(`you are now the proud owner of token #${tokenId}`);
+    shyContract.mint().then((tokenId: TransactionResponse) => alert(`you are now the proud owner of token #${JSON.stringify(tokenId)}`));
   }
   const checkOwnership = async (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
@@ -119,7 +119,7 @@ export default function home(props: any): any {
         <div className={styles.horizontal}>
           <div className={styles.gapless}>
             from:
-            <AddressInput id="from (address)" onChange={ event => setSourceWallet(event.target.value) } />
+            <AddressInput id="from (address)" onChange={ (event) => setSourceWallet(event.target.value) } />
             to:
             <AddressInput id="to (address)" onChange={ event => setTargetWallet(event.target.value) } />
             <div className={styles.ctas}>
@@ -149,9 +149,9 @@ export default function home(props: any): any {
           </div>
           <div
           className={styles.ctas}>
-            <select style={{height:"1.5em"}} onChange={(s)=>setSignerIndex(parseInt(s.target.value))}>
+            {/* <select style={{height:"1.5em"}} onChange={(s)=>setSignerIndex(parseInt(s.target.value))}>
               {(availableSigners ?? []).map( (x, index) => <option value={index}>{x.address}</option>)}
-            </select>
+            </select> */}
             <button
             className={styles.primary}
             onClick={connectMetamask}>
@@ -216,7 +216,8 @@ function TextContent({}) {
     </ol>
   </>);
 }
-function AddressInput({id, onChange}) {
+function AddressInput(props: {id: string, onChange: (_:React.ChangeEvent<HTMLInputElement>)=>void}) {
+  const {id, onChange} = props;
   return (
     <input
       id={id}
