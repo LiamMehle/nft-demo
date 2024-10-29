@@ -1,5 +1,5 @@
-# Read me
-### or don't. I'm just text
+# Read me!
+### or don't, I'm just text
 
 This is a regular [Next.js](https://nextjs.org) app created using [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
