@@ -51,21 +51,21 @@ export default function home(props: any): any {
         console.log(`sigher=${JSON.stringify(signer)}`)
         const shyContract = new ethers.Contract(contractAddress, nftAbi, signer);
 
-        shyContract.on("event TokenMinted(uint id)", (id, event) => {
+        shyContract.on("event TokenMinted(uint id)", (id, event: ethers.EventLog) => {
           if (processedTxs.current.has(event.transactionHash))
             return;
           processedTxs.current.add(event.transactionHash);
           setEventHistory(eventHistory =>
             [...eventHistory, `Token minted with ID ${id}`]);
         });
-        shyContract.on("event TokenGiven(address from, address to, uint id)", (from, to, id, event) => {
+        shyContract.on("event TokenGiven(address from, address to, uint id)", (from, to, id, event: ethers.EventLog) => {
           if (processedTxs.current.has(event.transactionHash))
             return;
           processedTxs.current.add(event.transactionHash);
           setEventHistory(eventHistory =>
             [...eventHistory, `Token ${id} given by ${from} to ${to}`])
         });
-        shyContract.on("event TokenDestroyed(uint id)", (id, event) => {
+        shyContract.on("event TokenDestroyed(uint id)", (id, event: ethers.EventLog) => {
           if (processedTxs.current.has(event.transactionHash))
             return;
           processedTxs.current.add(event.transactionHash);

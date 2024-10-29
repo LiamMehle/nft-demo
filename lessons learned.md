@@ -23,3 +23,6 @@
 - turns out event listeners silently error if defined incorrectly
 - instead of using destructuring, event listeners silentry don't pass arguments past the number that the listener takes.
 - useref doesn't re-render
+
+## daz4
+- adding sql logging was the easiest part
