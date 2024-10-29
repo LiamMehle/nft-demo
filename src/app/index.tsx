@@ -139,29 +139,28 @@ export default function home(props: any): any {
               <button
                 className={styles.primary}
                 onClick={ handler(connectMetamask)}>
-                connect to metamask
-              </button>
-              <button
-                className={styles.primary}
-                onClick={ handler(doTransfer) }>
-                <Image
+                  <Image
                   className={styles.logo}
                   src="/vercel.svg"
                   alt="Vercel logomark"
                   width={20}
-                  height={20}
-                />
+                  height={20} />
+                connect to metamask
+              </button>
+              <button
+                className={styles.secondary}
+                onClick={ handler(mintToken)}>
+                Create new token
+              </button>
+              <button
+                className={styles.primary}
+                onClick={ handler(doTransfer) }>
                 Give token
               </button>
               <button
                 className={styles.secondary}
                 onClick={ handler(checkOwnership)}>
                 Find token owner
-              </button>
-              <button
-                className={styles.secondary}
-                onClick={ handler(mintToken)}>
-                Create new token
               </button>
               <p className={styles.error}>{message.length > 0 && message}</p>
             </div>
