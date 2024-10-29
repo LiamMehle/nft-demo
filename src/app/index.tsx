@@ -7,6 +7,8 @@ import { ethers } from "ethers";
 import { MetaMaskInpageProvider } from "@metamask/providers";
 import { TransactionResponse } from "ethers";
 import nftAbi from "../common/shyTokenAbi";
+import { GetServerSideProps } from "next";
+// import { getServerSideProps } from "next/dist/build/templates/pages";
 
 declare global {
   interface Window {
@@ -25,23 +27,22 @@ function handler<T extends {preventDefault: ()=>void}>(f: (_:T)=>void): (_:T)=>v
   return e => { e.preventDefault(); f(e); }
 }
 
+const contractAddress = "0xAc15511438855bD3889117cBE8CF9a1de7005718";
+
 export default function home(props: any): any {
-  const sourceWallet = useRef<string>('');  // type not strictly needed, but consistency
-  const targetWallet = useRef<string>('');
+  const sourceWallet = useRef<string>("");  // type not strictly needed, but consistency
+  const targetWallet = useRef<string>("");
   const tokenId      = useRef<number|undefined>(undefined);
   const [eventHistory, setEventHistory] = useState<string[]>([]);
-  const [message,      setMessage     ] = useState<string>('');
+  const [message,      setMessage     ] = useState<string>("");
   const cryptoState  = useRef<CryptoState|undefined>(undefined);
   const processedTxs = useRef(new Set<string>());
-
-
 
   const connectMetamask = (event: React.MouseEvent<HTMLButtonElement>) => {
     if (window.ethereum === undefined)
       return alert("Unable to access metamask plugin. Please make use you have it installed and enabled.");
 
     const provider = new ethers.BrowserProvider(window.ethereum);
-    const contractAddress = "0x6b10BC40A6Bae5684E497bAe5611518DD657266F";
 
     provider.getSigner(sourceWallet.current)
       .then(signer => {
@@ -77,7 +78,7 @@ export default function home(props: any): any {
           address: contractAddress,
           shyContract: shyContract
         };
-      }).catch(e => setMessage('failed to connect to MetaMask.'));
+      }).catch(e => setMessage(`failed to connect to MetaMask: ${JSON.stringify(e)}`));
   };
 
 

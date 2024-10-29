@@ -1,36 +1,26 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Read me
+### or don't. I'm just text
 
-## Getting Started
+This is a regular [Next.js](https://nextjs.org) app created using [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-First, run the development server:
+Given it's demo state, it is recommended to run using `npm next dev` and open [http://localhost:3000](http://localhost:3000).
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+The contract address is hardcoded in `src/app/page.tsx` and the smart contract is published on the SepoliaETH test net.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+1. copy and paste your wallet address into the `from:` input, then click on `Connect to metamask`, to connect your metamask wallet,
+2. perform actions.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+actions include:
+- giving tokens (you own) to others'.
+    - input the token `id` and `target wallet` into the appropriate fields
+    - click on `Give token`
+    - follow the status of the transaction at the bottom of the page
+- checking the ownership of a token
+    - input the token `id`
+    - click on `Find token owner`
+    - an alert and message at the bottom of the page will tell you who owns the token
+- creating a new token
+    - click on `Create new token`
+    - follow the status of the transaction underneath
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The single-page application may run locally, but the functionality relies on Web3, so others can see the effects of your transactions.
