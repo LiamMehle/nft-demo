@@ -120,6 +120,10 @@ a.secondary {
   flex-shrink: 0;
 }
 
+.error {
+  color: #a33;
+}
+
 /* Enable hover only on non-touch devices */
 @media (hover: hover) and (pointer: fine) {
   a.primary:hover {

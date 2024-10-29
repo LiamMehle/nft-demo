@@ -14,17 +14,10 @@ declare global {
   }
 }
 
-
-
 type CryptoState = {
   provider:    ethers.BrowserProvider,
   address:     string,
   shyContract: ethers.Contract
-};
-
-type FatSigner = {
-  signer:  ethers.JsonRpcSigner,
-  address: string
 };
 
 // higher order fuckery. Buttons reload the site, so gotta preventDefault it away every time.
@@ -37,40 +30,44 @@ export default function home(props: any): any {
   const targetWallet = useRef<string>('');
   const tokenId      = useRef<number|undefined>(undefined);
   const [eventHistory, setEventHistory] = useState<string[]>([]);
+  const [message,      setMessage     ] = useState<string>('');
   const cryptoState  = useRef<CryptoState|undefined>(undefined);
   const processedTxs = useRef(new Set<string>());
 
-  const connectMetamask = (event: React.MouseEvent<HTMLButtonElement>) => {
+  const connectMetamask = (_) => {
     if (window.ethereum === undefined)
       return alert("Unable to access metamask plugin. Please make use you have it installed and enabled.");
+
     const provider = new ethers.BrowserProvider(window.ethereum);
     const contractAddress = "0x6b10BC40A6Bae5684E497bAe5611518DD657266F";
-    // const shyContract = new ethers.Contract(contractAddress, nftAbi, provider);
+
     provider.getSigner(sourceWallet.current)
       .then(signer => {
-        console.log(`sigher=${JSON.stringify(signer)}`)
+        console.log(`signer=${JSON.stringify(signer)}`)
         const shyContract = new ethers.Contract(contractAddress, nftAbi, signer);
 
         shyContract.on("event TokenMinted(uint id)", (id, event: ethers.EventLog) => {
           if (processedTxs.current.has(event.transactionHash))
-            return;
+            return;  // already processed
           processedTxs.current.add(event.transactionHash);
-          setEventHistory(eventHistory =>
-            [...eventHistory, `Token minted with ID ${id}`]);
+
+          setEventHistory(eventHistory => [...eventHistory, `Token minted with ID ${id}`]);
         });
+
         shyContract.on("event TokenGiven(address from, address to, uint id)", (from, to, id, event: ethers.EventLog) => {
           if (processedTxs.current.has(event.transactionHash))
             return;
           processedTxs.current.add(event.transactionHash);
-          setEventHistory(eventHistory =>
-            [...eventHistory, `Token ${id} given by ${from} to ${to}`])
+
+          setEventHistory(eventHistory => [...eventHistory, `Token ${id} given by ${from} to ${to}`])
         });
+
         shyContract.on("event TokenDestroyed(uint id)", (id, event: ethers.EventLog) => {
           if (processedTxs.current.has(event.transactionHash))
             return;
           processedTxs.current.add(event.transactionHash);
-          setEventHistory(eventHistory =>
-            [...eventHistory, `Token ${id} destroyed`])
+
+          setEventHistory(eventHistory => [...eventHistory, `Token ${id} destroyed`])
         });
 
         cryptoState.current = {
@@ -78,7 +75,7 @@ export default function home(props: any): any {
           address: contractAddress,
           shyContract: shyContract
         };
-      }).catch(e => console.error(e));
+      }).catch(e => setMessage('failed to connect to MetaMask.'));
   }
 
   const doTransfer = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -87,25 +84,36 @@ export default function home(props: any): any {
     const {shyContract} = cryptoState.current;
     
     // todo: call contract with signer(?) and correct parameters to give nft
-    shyContract.give(tokenId.current, targetWallet.current).then((res: TransactionResponse) => {
-      setEventHistory([...eventHistory, `sent token give request. hash: ${res.hash}`]);
-    });
+    shyContract.give(tokenId.current, targetWallet.current)
+      .then((res: TransactionResponse) =>
+        setEventHistory([...eventHistory, `sent token give request. hash: ${res.hash}`]))
+      .catch(e => setMessage(`Failed to give token to ${targetWallet.current}.`));
   };
+
   const mintToken = (event: React.MouseEvent<HTMLButtonElement>) => {
     if (cryptoState.current === undefined) return;  // todo: figure out error handling
     
     const {provider, address, shyContract} = cryptoState.current;
-    shyContract.mint().then((res: TransactionResponse) => {
-      setEventHistory([...eventHistory, `sent token mint request. hash: ${res.hash}`]);
-    });
-  }
-  const checkOwnership = (event: React.MouseEvent<HTMLButtonElement>) => {
+    shyContract.mint()
+      .then((res: TransactionResponse) =>
+        setEventHistory([...eventHistory, `sent token mint request. hash: ${res.hash}`]))
+      .catch(e =>
+        setMessage('failed to mint token.'));
+      };
+      
+      const checkOwnership = (event: React.MouseEvent<HTMLButtonElement>) => {
     if (cryptoState.current === undefined || tokenId.current === undefined) return;  // todo: figure out error handling
     
     const {shyContract} = cryptoState.current;
-    shyContract.getOwner(tokenId.current).then(owner =>
-      alert(`Token with ID ${tokenId.current} is owned by ${owner}`));
-  }
+    shyContract.getOwner(tokenId.current)
+      .then(owner => {
+        const message = `Token with ID ${tokenId.current} is owned by ${owner}`;
+        alert(message);
+        setEventHistory([...eventHistory, message]);
+      }).catch(e =>
+        setMessage('failed to get the owner of the token.')
+      );
+  };
 
   return (
     <div className={styles.page}>
@@ -122,6 +130,11 @@ export default function home(props: any): any {
             <div className={styles.ctas}>
               <button
                 className={styles.primary}
+                onClick={ handler(connectMetamask)}>
+                connect to metamask
+              </button>
+              <button
+                className={styles.primary}
                 onClick={ handler(doTransfer) }>
                 <Image
                   className={styles.logo}
@@ -135,25 +148,16 @@ export default function home(props: any): any {
               <button
                 className={styles.secondary}
                 onClick={ handler(checkOwnership)}>
-                check who owns the token
+                Find token owner
               </button>
               <button
                 className={styles.secondary}
                 onClick={ handler(mintToken)}>
-                create new token
+                Create new token
               </button>
+              <p className={styles.error}>{message.length > 0 && message}</p>
             </div>
           </div>
-          <div
-          className={styles.ctas}>
-            {/* <select style={{height:"1.5em"}} onChange={(s)=>setSignerIndex(parseInt(s.target.value))}>
-              {(availableSigners ?? []).map( (x, index) => <option value={index}>{x.address}</option>)}
-            </select> */}
-            <button
-            className={styles.primary}
-            onClick={ handler(connectMetamask)}>
-            connect to metamask
-          </button></div>
         </div>
         <div>
           events:
@@ -201,7 +205,6 @@ function TextContent({}) {
       </li>
       <li>
         Then, created a new file called <code>index.tsx</code> next to it <i>(per the instructions)</i> and pointed <code>page.tsx</code> to it.
-
         </li>
       <li>
         Saved and saw the changes <i>near</i> instantly.
