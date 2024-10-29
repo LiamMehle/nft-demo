@@ -129,10 +129,10 @@ export default function home(props: any): any {
         <TextContent />
         <div className={styles.horizontal}>
           <div className={styles.gapless}>
+            your wallet address:
+            <AddressInput id="from (address)" onChange={ event => sourceWallet.current = (event.target.value) } />
             token ID:
             <NumberInput id="token ID)" onChange={ event => tokenId.current = parseInt(event.target.value) } />
-            from:
-            <AddressInput id="from (address)" onChange={ event => sourceWallet.current = (event.target.value) } />
             to:
             <AddressInput id="to (address)" onChange={ event => targetWallet.current = (event.target.value) } />
             <div className={styles.ctas}>
