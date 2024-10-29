@@ -7,7 +7,7 @@ Given it's demo state, it is recommended to run using `npm next dev` and open [h
 
 The contract address is hardcoded in `src/app/page.tsx` and the smart contract is published on the SepoliaETH test net.
 
-1. copy and paste your wallet address into the `from:` input, then click on `Connect to metamask`, to connect your metamask wallet,
+1. copy and paste your wallet address into the `your wallet address:` input, then click on `Connect to metamask`, to connect your metamask wallet,
 2. perform actions.
 
 actions include:
