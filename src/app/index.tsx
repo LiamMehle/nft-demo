@@ -9,7 +9,7 @@ import { TransactionResponse } from "ethers";
 import nftAbi from "../common/shyTokenAbi";
 
 declare global {
-  interface Window{
+  interface Window {
     ethereum?:MetaMaskInpageProvider
   }
 }
@@ -34,7 +34,9 @@ export default function home(props: any): any {
   const cryptoState  = useRef<CryptoState|undefined>(undefined);
   const processedTxs = useRef(new Set<string>());
 
-  const connectMetamask = (_) => {
+
+
+  const connectMetamask = (event: React.MouseEvent<HTMLButtonElement>) => {
     if (window.ethereum === undefined)
       return alert("Unable to access metamask plugin. Please make use you have it installed and enabled.");
 
@@ -76,7 +78,8 @@ export default function home(props: any): any {
           shyContract: shyContract
         };
       }).catch(e => setMessage('failed to connect to MetaMask.'));
-  }
+  };
+
 
   const doTransfer = (event: React.MouseEvent<HTMLButtonElement>) => {
     if (cryptoState.current === undefined) return;  // todo: figure out error handling
@@ -90,6 +93,7 @@ export default function home(props: any): any {
       .catch(e => setMessage(`Failed to give token to ${targetWallet.current}.`));
   };
 
+
   const mintToken = (event: React.MouseEvent<HTMLButtonElement>) => {
     if (cryptoState.current === undefined) return;  // todo: figure out error handling
     
@@ -99,9 +103,10 @@ export default function home(props: any): any {
         setEventHistory([...eventHistory, `sent token mint request. hash: ${res.hash}`]))
       .catch(e =>
         setMessage('failed to mint token.'));
-      };
+  };
+
       
-      const checkOwnership = (event: React.MouseEvent<HTMLButtonElement>) => {
+  const checkOwnership = (event: React.MouseEvent<HTMLButtonElement>) => {
     if (cryptoState.current === undefined || tokenId.current === undefined) return;  // todo: figure out error handling
     
     const {shyContract} = cryptoState.current;
@@ -115,6 +120,8 @@ export default function home(props: any): any {
       );
   };
 
+
+
   return (
     <div className={styles.page}>
       <main className={styles.main}>
@@ -122,9 +129,9 @@ export default function home(props: any): any {
         <div className={styles.horizontal}>
           <div className={styles.gapless}>
             token ID:
-            <AddressInput id="token ID)" onChange={ (event) => tokenId.current = parseInt(event.target.value) } />
+            <NumberInput id="token ID)" onChange={ event => tokenId.current = parseInt(event.target.value) } />
             from:
-            <AddressInput id="from (address)" onChange={ (event) => sourceWallet.current = (event.target.value) } />
+            <AddressInput id="from (address)" onChange={ event => sourceWallet.current = (event.target.value) } />
             to:
             <AddressInput id="to (address)" onChange={ event => targetWallet.current = (event.target.value) } />
             <div className={styles.ctas}>
@@ -170,6 +177,7 @@ export default function home(props: any): any {
     </div>
   );
 }
+
 function Footer({}) {
   return (<footer className={styles.footer}>
     <a href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app" target="_blank" rel="noopener noreferrer">
@@ -212,6 +220,22 @@ function TextContent({}) {
     </ol>
   </>);
 }
+
+function NumberInput(props: {id: string, onChange: (_:React.ChangeEvent<HTMLInputElement>)=>void}) {
+  const {id, onChange} = props;
+  return (
+    <input
+      id={id}
+      onChange={onChange}
+      type="number"
+      pattern="[0-9]+"
+      title="Recipient address: "
+      placeholder="...357..."
+      className={styles.address}
+      />
+    );
+}
+
 function AddressInput(props: {id: string, onChange: (_:React.ChangeEvent<HTMLInputElement>)=>void}) {
   const {id, onChange} = props;
   return (
